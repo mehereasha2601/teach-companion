@@ -18,20 +18,32 @@ export function getYouTubeThumbnailUrl(videoId: string): string {
 }
 
 /**
- * Fetch transcript from YouTube video using the youtube-transcript package
+ * Fetch transcript from YouTube video using our API endpoint
+ * This avoids CORS issues by making the request server-side
  */
 export async function getYouTubeTranscript(videoId: string): Promise<string> {
   try {
-    // Fetch the actual transcript from YouTube
-    const transcriptItems = await YoutubeTranscript.fetchTranscript(videoId);
+    // Call our API endpoint to fetch the transcript
+    const response = await fetch('/api/transcript', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ videoId }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to fetch transcript');
+    }
+
+    const data = await response.json();
     
-    // Convert transcript items to a single string
-    // Each item has text and timestamp information
-    const fullTranscript = transcriptItems
-      .map(item => item.text)
-      .join(' ');
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to fetch transcript');
+    }
     
-    return fullTranscript;
+    return data.transcript;
   } catch (error) {
     console.error("Error fetching YouTube transcript:", error);
     
