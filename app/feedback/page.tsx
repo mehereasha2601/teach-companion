@@ -7,7 +7,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Loader2, ThumbsUp, ThumbsDown, Download, Share2, AlertTriangle } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { analyzeTeachingVideo } from "@/lib/openai"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export default function FeedbackPage() {
@@ -39,8 +38,19 @@ export default function FeedbackPage() {
       const videoData = JSON.parse(videoDataStr)
 
       try {
-        // Call our OpenAI integration
-        const result = await analyzeTeachingVideo(videoData.transcript, profile)
+        // Call our server-side API route instead of directly using the OpenAI API
+        const response = await fetch('/api/analyze', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            transcript: videoData.transcript,
+            teacherProfile: profile
+          }),
+        });
+
+        const result = await response.json();
 
         if (result.success) {
           setFeedback(result.data)
