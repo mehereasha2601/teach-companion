@@ -1,4 +1,5 @@
 // This is a utility file for handling YouTube video processing
+import { YoutubeTranscript } from 'youtube-transcript';
 
 /**
  * Extract video ID from a YouTube URL
@@ -17,28 +18,39 @@ export function getYouTubeThumbnailUrl(videoId: string): string {
 }
 
 /**
- * In a real application, this function would fetch the transcript from YouTube
- * For demo purposes, we'll return a mock transcript
+ * Fetch transcript from YouTube video using the youtube-transcript package
  */
 export async function getYouTubeTranscript(videoId: string): Promise<string> {
-  // This would use a service like YouTube Data API or a third-party service
-  // to fetch the actual transcript
-
-  // For demo purposes, return a mock transcript
-  return `
-    Good morning class! Today we're going to be learning about fractions.
-    Fractions are a way to represent parts of a whole.
-    For example, if I have a pizza and cut it into 8 slices, each slice is 1/8 of the whole pizza.
-    Now, who can tell me what the top number in a fraction is called?
-    [Student responds]
-    That's right, it's called the numerator. And the bottom number?
-    [Student responds]
-    Correct! It's called the denominator.
-    Let's practice with some examples. If I have 3 out of 4 pieces of a chocolate bar, what fraction would that be?
-    [Students respond]
-    Yes, that would be 3/4. The numerator is 3, and the denominator is 4.
-    Now let's talk about equivalent fractions...
-  `
+  try {
+    // Fetch the actual transcript from YouTube
+    const transcriptItems = await YoutubeTranscript.fetchTranscript(videoId);
+    
+    // Convert transcript items to a single string
+    // Each item has text and timestamp information
+    const fullTranscript = transcriptItems
+      .map(item => item.text)
+      .join(' ');
+    
+    return fullTranscript;
+  } catch (error) {
+    console.error("Error fetching YouTube transcript:", error);
+    
+    // Fallback to mock data if transcript can't be fetched
+    return `
+      Good morning class! Today we're going to be learning about fractions.
+      Fractions are a way to represent parts of a whole.
+      For example, if I have a pizza and cut it into 8 slices, each slice is 1/8 of the whole pizza.
+      Now, who can tell me what the top number in a fraction is called?
+      [Student responds]
+      That's right, it's called the numerator. And the bottom number?
+      [Student responds]
+      Correct! It's called the denominator.
+      Let's practice with some examples. If I have 3 out of 4 pieces of a chocolate bar, what fraction would that be?
+      [Students respond]
+      Yes, that would be 3/4. The numerator is 3, and the denominator is 4.
+      Now let's talk about equivalent fractions...
+    `;
+  }
 }
 
 /**

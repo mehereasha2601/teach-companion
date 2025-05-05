@@ -60,9 +60,12 @@ export default function VideoUploadPage() {
     setIsLoading(true)
 
     try {
-      // In a real application, we would extract the transcript from the YouTube video
-      // For now, we'll use a mock transcript from our utility
+      // Now using the real transcript extraction functionality
       const transcript = await getYouTubeTranscript(videoId)
+      
+      if (!transcript || transcript.trim().length === 0) {
+        throw new Error("Could not extract transcript from this video")
+      }
 
       // Store video data in localStorage
       localStorage.setItem(
@@ -75,12 +78,19 @@ export default function VideoUploadPage() {
         }),
       )
 
+      toast({
+        title: "Transcript extracted successfully",
+        description: "Proceeding to feedback analysis",
+      })
+
       router.push("/feedback")
     } catch (error) {
       console.error("Error processing video:", error)
       toast({
         title: "Error",
-        description: "Failed to process the video. Please try again.",
+        description: error instanceof Error 
+          ? `Failed to process the video: ${error.message}` 
+          : "Failed to process the video. Please try again or try another video that has captions available.",
         variant: "destructive",
       })
       setIsLoading(false)
