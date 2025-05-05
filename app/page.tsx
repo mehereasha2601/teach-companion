@@ -14,9 +14,9 @@ export default function Home() {
 
           <div className="w-full max-w-5xl">
             <img
-              src="/placeholder.svg?key=4p36r"
+              src="/teaching-hero.svg"
               alt="Educational environment showing teachers and students"
-              className="rounded-xl shadow-lg w-full object-cover"
+              className="rounded-xl shadow-lg w-full object-cover h-[300px]"
             />
           </div>
 

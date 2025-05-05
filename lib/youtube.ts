@@ -21,7 +21,7 @@ export function getYouTubeThumbnailUrl(videoId: string): string {
  * Fetch transcript from YouTube video using our API endpoint
  * This avoids CORS issues by making the request server-side
  */
-export async function getYouTubeTranscript(videoId: string): Promise<string> {
+export async function getYouTubeTranscript(videoId: string): Promise<{ transcript: string; isMockTranscript?: boolean }> {
   try {
     // Call our API endpoint to fetch the transcript
     const response = await fetch('/api/transcript', {
@@ -43,25 +43,31 @@ export async function getYouTubeTranscript(videoId: string): Promise<string> {
       throw new Error(data.error || 'Failed to fetch transcript');
     }
     
-    return data.transcript;
+    return { 
+      transcript: data.transcript,
+      isMockTranscript: data.isMockTranscript || false
+    };
   } catch (error) {
     console.error("Error fetching YouTube transcript:", error);
     
     // Fallback to mock data if transcript can't be fetched
-    return `
-      Good morning class! Today we're going to be learning about fractions.
-      Fractions are a way to represent parts of a whole.
-      For example, if I have a pizza and cut it into 8 slices, each slice is 1/8 of the whole pizza.
-      Now, who can tell me what the top number in a fraction is called?
-      [Student responds]
-      That's right, it's called the numerator. And the bottom number?
-      [Student responds]
-      Correct! It's called the denominator.
-      Let's practice with some examples. If I have 3 out of 4 pieces of a chocolate bar, what fraction would that be?
-      [Students respond]
-      Yes, that would be 3/4. The numerator is 3, and the denominator is 4.
-      Now let's talk about equivalent fractions...
-    `;
+    return { 
+      transcript: `
+        Good morning class! Today we're going to be learning about fractions.
+        Fractions are a way to represent parts of a whole.
+        For example, if I have a pizza and cut it into 8 slices, each slice is 1/8 of the whole pizza.
+        Now, who can tell me what the top number in a fraction is called?
+        [Student responds]
+        That's right, it's called the numerator. And the bottom number?
+        [Student responds]
+        Correct! It's called the denominator.
+        Let's practice with some examples. If I have 3 out of 4 pieces of a chocolate bar, what fraction would that be?
+        [Students respond]
+        Yes, that would be 3/4. The numerator is 3, and the denominator is 4.
+        Now let's talk about equivalent fractions...
+      `,
+      isMockTranscript: true
+    };
   }
 }
 

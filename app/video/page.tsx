@@ -61,10 +61,24 @@ export default function VideoUploadPage() {
 
     try {
       // Now using the real transcript extraction functionality
-      const transcript = await getYouTubeTranscript(videoId)
+      const result = await getYouTubeTranscript(videoId)
       
-      if (!transcript || transcript.trim().length === 0) {
+      if (!result.transcript || result.transcript.trim().length === 0) {
         throw new Error("Could not extract transcript from this video")
+      }
+
+      // Show warning if using mock transcript
+      if (result.isMockTranscript) {
+        toast({
+          title: "Using Demo Transcript",
+          description: "Couldn't access the actual video transcript. Using a demo transcript instead.",
+          variant: "destructive",
+        })
+      } else {
+        toast({
+          title: "Transcript extracted successfully",
+          description: "Proceeding to feedback analysis",
+        })
       }
 
       // Store video data in localStorage
@@ -74,14 +88,10 @@ export default function VideoUploadPage() {
           videoId,
           timeRange,
           url: youtubeUrl,
-          transcript,
+          transcript: result.transcript,
+          isMockTranscript: result.isMockTranscript || false,
         }),
       )
-
-      toast({
-        title: "Transcript extracted successfully",
-        description: "Proceeding to feedback analysis",
-      })
 
       router.push("/feedback")
     } catch (error) {
