@@ -1,5 +1,4 @@
-import { generateText } from "ai"
-import { openai } from "@ai-sdk/openai"
+import OpenAI from "openai"
 
 // Updated mock feedback data with the exact content provided
 const mockFeedbackData = {
@@ -63,6 +62,7 @@ const mockFeedbackData = {
   },
 }
 
+// Create a .env.local file in the root directory with OPENAI_API_KEY
 export async function analyzeTeachingVideo(transcript: string, teacherProfile: any) {
   try {
     // Check if OpenAI API key is available
@@ -78,73 +78,61 @@ export async function analyzeTeachingVideo(transcript: string, teacherProfile: a
       }
     }
 
+    // Create the OpenAI client with the API key
+    const openai = new OpenAI({
+      apiKey: apiKey,
+    })
+
+    // Prepare the prompt for the OpenAI model
     const prompt = `
-      You are an expert educational coach analyzing a teaching video transcript.
+      You are an expert teaching coach with years of experience observing and providing feedback to teachers.
       
-      TEACHER CONTEXT:
-      I teach 10th grade English focused on evidence-based writing to a diverse class of 45 students who predominantly perform below grade level. With an attendance of 95%, I struggle with maintaining student engagement during writing instruction. My classroom has students who are 50% at grade level competence and 30% below grade level competence and 20% above grade level competence. I want to ensure that I am engaging and imparting knowledge to all.
+      Analyze the following teaching transcript and provide detailed, actionable feedback.
       
-      Additional context from teacher profile:
-      - Subject: ${teacherProfile.subject}
-      - Grade Level: ${teacherProfile.grade}
-      - Topics: ${teacherProfile.topics || "Not specified"}
-      - Years Teaching: ${teacherProfile.yearsTeaching}
-      - Student Count: ${teacherProfile.studentCount}
-      - Competence Level: ${teacherProfile.competenceLevel}
-      - Gender Distribution: ${teacherProfile.genderDistribution}
-      - Expected Attendance: ${teacherProfile.attendance}%
-      - Challenges: ${teacherProfile.challenges.join(", ")}
-      ${teacherProfile.otherChallenge ? `- Other Challenges: ${teacherProfile.otherChallenge}` : ""}
+      TEACHER PROFILE:
+      ${JSON.stringify(teacherProfile, null, 2)}
       
-      TRANSCRIPT OF LESSON:
+      TRANSCRIPT:
       ${transcript}
       
-      I am seeking expert analysis on my lesson delivery. Please provide concise, actionable feedback (maximum 20 bullet points, with no more than 5-7 per domain) that addresses the key dimensions within. Format your response exactly as follows:
+      Please provide feedback in the following format:
       
       OVERALL FEEDBACK:
-      [Brief summary of overall performance - 2-3 sentences]
+      [A 2-3 sentence summary of the teaching observed, highlighting major strengths and 1-2 key areas for growth]
       
-      STRENGTHS, AREAS OF IMPROVEMENT, AND AVOID/RETHINK:
-      Strengths:
+      STRENGTHS:
       - [Strength 1]
       - [Strength 2]
-      - [Etc.]
+      - [Strength 3]
+      - [Strength 4]
+      - [Strength 5]
+      - [Strength 6]
       
-      Areas for Improvement:
+      AREAS FOR IMPROVEMENT:
       - [Area 1]
       - [Area 2]
-      - [Etc.]
+      - [Area 3]
+      - [Area 4]
+      - [Area 5]
+      - [Area 6]
+      - [Area 7]
+      - [Area 8]
+      - [Area 9]
       
-      Avoid/Rethink:
-      - [Item 1]
-      - [Item 2]
-      - [Etc.]
+      AVOID/RETHINK:
+      - [Issue 1]
+      - [Issue 2]
+      - [Issue 3]
+      - [Issue 4]
+      - [Issue 5]
       
       DETAILED FEEDBACK:
       
       DOMAIN 1: PLANNING AND PREPARATION
-      🔹 Strengths
-      ✅ [Strength with specific evidence]
-      
-      Transcript: "[Direct quote from transcript]"
-      
-      → [Impact or significance]
-      
-      🔹 Areas for Improvement
-      ⏳ [Area for improvement]
-      
-      Transcript: [Evidence from transcript]
-      
-      Suggestion: [Specific actionable change]
-      
-      Impact: [Expected outcome of implementing the suggestion]
-      
-      🔹 Avoid / Rethink
-      ⛔ [Practice to avoid]
-      
-      Transcript: [Evidence from transcript]
-      
-      Rethink: [Alternative approach]
+      [Provide 7 specific observations about planning and preparation, using the following format for each:]
+      - ✅ [Strength]: [Evidence from transcript] → [Impact]
+      - ⏳ [Area for improvement]: [Evidence from transcript] → [Specific suggestion] → [Expected impact]
+      - ⛔ [Critical issue to avoid]: [Evidence from transcript] → [Why this should be reconsidered]
       
       DOMAIN 2: CLASSROOM ENVIRONMENT
       [Follow same format as Domain 1]
@@ -160,16 +148,30 @@ export async function analyzeTeachingVideo(transcript: string, teacherProfile: a
       Please ensure your feedback is specific, actionable, and directly tied to evidence from the transcript.
     `
 
-    // Make the actual API call
-    const { text } = await generateText({
-      model: openai("gpt-4o"),
-      prompt: prompt,
+    console.log("Using OpenAI API with key:", apiKey ? `${apiKey.substring(0, 5)}...` : 'Not found');
+
+    // Make the actual API call with the OpenAI client
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [
+        { 
+          role: "system", 
+          content: "You are an expert teaching coach providing detailed, actionable feedback." 
+        },
+        { 
+          role: "user", 
+          content: prompt 
+        }
+      ],
       temperature: 0.7,
-      maxTokens: 3000,
-    })
+      max_tokens: 3000,
+    });
+
+    // Get the response text
+    const responseText = completion.choices[0].message.content;
 
     // Parse the response into structured data
-    const parsedFeedback = parseOpenAIResponse(text)
+    const parsedFeedback = parseOpenAIResponse(responseText || "");
 
     return {
       success: true,
@@ -190,19 +192,19 @@ export async function analyzeTeachingVideo(transcript: string, teacherProfile: a
 }
 
 // Helper function to parse the OpenAI response into structured data
-function parseOpenAIResponse(text) {
+function parseOpenAIResponse(text: string) {
   // This is a simplified parser - in a production app, you'd want more robust parsing
   const sections = {
     overallFeedback: "",
     summary: {
-      strengths: [],
-      areasForImprovement: [],
-      avoidRethink: [],
+      strengths: [] as string[],
+      areasForImprovement: [] as string[],
+      avoidRethink: [] as string[],
     },
     domains: {
-      planning: [],
-      environment: [],
-      instruction: [],
+      planning: [] as string[],
+      environment: [] as string[],
+      instruction: [] as string[],
     },
   }
 
@@ -213,33 +215,33 @@ function parseOpenAIResponse(text) {
   }
 
   // Extract strengths
-  const strengthsMatch = text.match(/Strengths:([\s\S]*?)(?=Areas for Improvement|$)/i)
+  const strengthsMatch = text.match(/STRENGTHS:([\s\S]*?)(?=AREAS FOR IMPROVEMENT|$)/i)
   if (strengthsMatch) {
     sections.summary.strengths = strengthsMatch[1]
       .trim()
       .split(/\n-\s*/)
-      .filter((item) => item.trim())
-      .map((item) => item.trim().replace(/^-\s*/, ""))
+      .filter((item: string) => item.trim())
+      .map((item: string) => item.trim().replace(/^-\s*/, ""))
   }
 
   // Extract areas for improvement
-  const improvementMatch = text.match(/Areas for Improvement:([\s\S]*?)(?=Avoid\/Rethink|$)/i)
+  const improvementMatch = text.match(/AREAS FOR IMPROVEMENT:([\s\S]*?)(?=AVOID\/RETHINK|$)/i)
   if (improvementMatch) {
     sections.summary.areasForImprovement = improvementMatch[1]
       .trim()
       .split(/\n-\s*/)
-      .filter((item) => item.trim())
-      .map((item) => item.trim().replace(/^-\s*/, ""))
+      .filter((item: string) => item.trim())
+      .map((item: string) => item.trim().replace(/^-\s*/, ""))
   }
 
   // Extract avoid/rethink
-  const avoidMatch = text.match(/Avoid\/Rethink:([\s\S]*?)(?=DETAILED FEEDBACK|DOMAIN 1|$)/i)
+  const avoidMatch = text.match(/AVOID\/RETHINK:([\s\S]*?)(?=DETAILED FEEDBACK|DOMAIN 1|$)/i)
   if (avoidMatch) {
     sections.summary.avoidRethink = avoidMatch[1]
       .trim()
       .split(/\n-\s*/)
-      .filter((item) => item.trim())
-      .map((item) => item.trim().replace(/^-\s*/, ""))
+      .filter((item: string) => item.trim())
+      .map((item: string) => item.trim().replace(/^-\s*/, ""))
   }
 
   // Extract domain 1: planning and preparation
@@ -248,8 +250,8 @@ function parseOpenAIResponse(text) {
     sections.domains.planning = domain1Match[1]
       .trim()
       .split(/\n⛔|\n✅|\n⏳/)
-      .filter((item) => item.trim())
-      .map((item) => item.trim())
+      .filter((item: string) => item.trim())
+      .map((item: string) => item.trim())
   }
 
   // Extract domain 2: classroom environment
@@ -258,8 +260,8 @@ function parseOpenAIResponse(text) {
     sections.domains.environment = domain2Match[1]
       .trim()
       .split(/\n⛔|\n✅|\n⏳/)
-      .filter((item) => item.trim())
-      .map((item) => item.trim())
+      .filter((item: string) => item.trim())
+      .map((item: string) => item.trim())
   }
 
   // Extract domain 3: instruction
@@ -268,8 +270,8 @@ function parseOpenAIResponse(text) {
     sections.domains.instruction = domain3Match[1]
       .trim()
       .split(/\n⛔|\n✅|\n⏳/)
-      .filter((item) => item.trim())
-      .map((item) => item.trim())
+      .filter((item: string) => item.trim())
+      .map((item: string) => item.trim())
   }
 
   return sections
